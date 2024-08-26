@@ -1,8 +1,11 @@
 # info:
 ---------------------------
+IP: {{title}}
+Hostname:
+Domain:
 OS:
 Web-Technology:
-IP:
+
 
 # Credentials
 --------------------------
